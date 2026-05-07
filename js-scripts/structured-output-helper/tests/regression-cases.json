@@ -1,0 +1,127 @@
+[
+  {
+    "id": "case-1-happy-lms-access",
+    "description": "Happy path: clear LMS access issue before a deadline.",
+    "input": {
+      "category": "LMS Support",
+      "priority": "High",
+      "summary": "Employee cannot access a required LMS course and the completion deadline is today.",
+      "required_actions": [
+        "Check learner account status",
+        "Verify course assignment"
+      ],
+      "confidence": 0.94,
+      "source_ids": [
+        "ticket-2001",
+        "email-employee-1"
+      ]
+    },
+    "expected_output": {
+      "category": "LMS Support",
+      "priority": "High",
+      "required_actions": [
+        "Check the learner's LMS access",
+        "Confirm course assignment and deadline",
+        "Reply with resolution or next steps"
+      ]
+    }
+  },
+  {
+    "id": "case-2-happy-training-request",
+    "description": "Happy path: manager requests a short training session for team members.",
+    "input": {
+      "category": "Training Request",
+      "priority": "Medium",
+      "summary": "A manager requested a short training session for their team next week.",
+      "required_actions": [
+        "Review request context",
+        "Prepare follow-up questions"
+      ],
+      "confidence": 0.9,
+      "source_ids": [
+        "email-manager-7"
+      ]
+    },
+    "expected_output": {
+      "category": "Training Request",
+      "priority": "Medium",
+      "required_actions": [
+        "Clarify learning objectives",
+        "Confirm audience size and timing",
+        "Create or schedule the requested training"
+      ]
+    }
+  },
+  {
+    "id": "case-3-happy-general-fyi",
+    "description": "Happy path: general FYI update with no urgent action needed.",
+    "input": {
+      "category": "General Update",
+      "priority": "Low",
+      "summary": "General update: the monthly training metrics dashboard has been refreshed for review.",
+      "required_actions": [
+        "Share dashboard link"
+      ],
+      "confidence": 0.88,
+      "source_ids": [
+        "slack-update-44"
+      ]
+    },
+    "expected_output": {
+      "category": "General Update",
+      "priority": "Low",
+      "required_actions": [
+        "Review for awareness",
+        "No immediate action required"
+      ]
+    }
+  },
+  {
+    "id": "case-4-messy-urgent-typos",
+    "description": "Messy example: typo-heavy urgent LMS issue with missing punctuation.",
+    "input": {
+      "category": "LMS Support",
+      "priority": "High",
+      "summary": "cant get in2 course due today mgr askin pls fix asap no luck login",
+      "required_actions": [
+        "plz help"
+      ],
+      "confidence": 0.76,
+      "source_ids": [
+        "chat-msg-urgent-12"
+      ]
+    },
+    "expected_output": {
+      "category": "LMS Support",
+      "priority": "High",
+      "required_actions": [
+        "Identify the learner and course",
+        "Troubleshoot LMS access",
+        "Escalate if access cannot be restored quickly"
+      ]
+    }
+  },
+  {
+    "id": "case-5-messy-vague-request",
+    "description": "Messy example: vague training help request with missing details.",
+    "input": {
+      "category": "Needs Clarification",
+      "priority": "Medium",
+      "summary": "need help with training thing next week",
+      "required_actions": [],
+      "confidence": 0.61,
+      "source_ids": [
+        "sms-unknown-3"
+      ]
+    },
+    "expected_output": {
+      "category": "Needs Clarification",
+      "priority": "Medium",
+      "required_actions": [
+        "Ask for the training topic",
+        "Ask for audience and timing details",
+        "Confirm what support is needed"
+      ]
+    }
+  }
+]

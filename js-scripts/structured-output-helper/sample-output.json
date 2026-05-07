@@ -1,0 +1,15 @@
+{
+  "category": "Billing",
+  "priority": "High",
+  "summary": "Customer reports duplicate charge on the latest invoice.",
+  "required_actions": [
+    "Verify transaction history",
+    "Issue refund if duplicate charge is confirmed",
+    "Notify customer with resolution details"
+  ],
+  "confidence": 0.92,
+  "source_ids": [
+    "ticket-1042",
+    "invoice-2026-04-991"
+  ]
+}
