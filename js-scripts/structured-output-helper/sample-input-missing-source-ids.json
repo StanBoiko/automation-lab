@@ -1,0 +1,14 @@
+{
+  "request_id": "req_2026_0510_002",
+  "category": "Course Access",
+  "priority": "Medium",
+  "summary": "User requested access help but no traceable source IDs were provided.",
+  "required_actions": [
+    "Ask for original ticket or message IDs"
+  ],
+  "confidence": 0.7,
+  "payload": {
+    "subject": "Need help accessing training",
+    "body": "Please help me get access."
+  }
+}
