@@ -1,15 +1,18 @@
 {
-  "category": "Billing",
-  "priority": "High",
-  "summary": "Customer reports duplicate charge on the latest invoice.",
-  "required_actions": [
-    "Verify transaction history",
-    "Issue refund if duplicate charge is confirmed",
-    "Notify customer with resolution details"
-  ],
-  "confidence": 0.92,
+  "request_id": "req_2026_0510_001",
+  "status": "Final",
   "source_ids": [
-    "ticket-1042",
-    "invoice-2026-04-991"
+    "ticket-87342",
+    "email-msg-2231"
+  ],
+  "review_reason": "",
+  "category": "LMS Support",
+  "summary": "Urgent: Can't access course module I cannot access my LMS module and it is due today.",
+  "confidence": 0.92,
+  "priority": "High",
+  "required_actions": [
+    "Check the learner's LMS access",
+    "Confirm course assignment and deadline",
+    "Reply with resolution or next steps"
   ]
 }

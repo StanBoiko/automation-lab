@@ -1,0 +1,13 @@
+{
+  "request_id": "req_2026_0510_002",
+  "status": "Needs review",
+  "source_ids": [],
+  "review_reason": "Missing source_ids; answer cannot be verified.",
+  "category": "Course Access",
+  "summary": "User requested access help but no traceable source IDs were provided.",
+  "confidence": 0.7,
+  "priority": "Medium",
+  "required_actions": [
+    "Ask for original ticket or message IDs"
+  ]
+}

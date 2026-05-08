@@ -5,23 +5,29 @@ const path = require('path');
 const outputSchema = {
   type: 'object',
   required: [
+    'request_id',
+    'status',
     'category',
-    'priority',
     'summary',
-    'required_actions',
+    'source_ids',
     'confidence',
-    'source_ids'
+    'review_reason',
+    'priority',
+    'required_actions'
   ],
   properties: {
+    request_id: { type: 'string' },
+    status: { type: 'string', enum: ['Final', 'Needs review'] },
     category: { type: 'string' },
-    priority: { type: 'string', enum: ['Low', 'Medium', 'High'] },
     summary: { type: 'string' },
-    required_actions: {
+    source_ids: {
       type: 'array',
       items: { type: 'string' }
     },
     confidence: { type: 'number', minimum: 0, maximum: 1 },
-    source_ids: {
+    review_reason: { type: 'string' },
+    priority: { type: 'string', enum: ['Low', 'Medium', 'High'] },
+    required_actions: {
       type: 'array',
       items: { type: 'string' }
     }
@@ -32,57 +38,37 @@ const outputSchema = {
 function validateStructuredOutput(output, schema) {
   const errors = [];
 
-  // Ensure output is an object
   if (typeof output !== 'object' || output === null || Array.isArray(output)) {
     errors.push('Output must be an object.');
     return { valid: false, errors };
   }
 
-  // Check required fields
   for (const key of schema.required) {
     if (!(key in output)) {
       errors.push(`Missing required field: ${key}`);
     }
   }
 
-  // If required fields are missing, return early
   if (errors.length > 0) {
     return { valid: false, errors };
   }
 
-  // category: string
+  if (typeof output.request_id !== 'string') {
+    errors.push('request_id must be a string.');
+  }
+
+  if (!schema.properties.status.enum.includes(output.status)) {
+    errors.push('status must be one of: Final, Needs review.');
+  }
+
   if (typeof output.category !== 'string') {
     errors.push('category must be a string.');
   }
 
-  // priority: enum
-  if (!schema.properties.priority.enum.includes(output.priority)) {
-    errors.push('priority must be one of: Low, Medium, High.');
-  }
-
-  // summary: string
   if (typeof output.summary !== 'string') {
     errors.push('summary must be a string.');
   }
 
-  // required_actions: array of strings
-  if (!Array.isArray(output.required_actions)) {
-    errors.push('required_actions must be an array.');
-  } else {
-    const badAction = output.required_actions.find((item) => typeof item !== 'string');
-    if (badAction !== undefined) {
-      errors.push('required_actions must contain only strings.');
-    }
-  }
-
-  // confidence: number between 0 and 1
-  if (typeof output.confidence !== 'number' || Number.isNaN(output.confidence)) {
-    errors.push('confidence must be a valid number.');
-  } else if (output.confidence < 0 || output.confidence > 1) {
-    errors.push('confidence must be between 0 and 1.');
-  }
-
-  // source_ids: array of strings
   if (!Array.isArray(output.source_ids)) {
     errors.push('source_ids must be an array.');
   } else {
@@ -92,18 +78,77 @@ function validateStructuredOutput(output, schema) {
     }
   }
 
+  if (typeof output.confidence !== 'number' || Number.isNaN(output.confidence)) {
+    errors.push('confidence must be a valid number.');
+  } else if (output.confidence < 0 || output.confidence > 1) {
+    errors.push('confidence must be between 0 and 1.');
+  }
+
+  if (typeof output.review_reason !== 'string') {
+    errors.push('review_reason must be a string.');
+  }
+
+  // Traceability status rules
+  if (output.status === 'Final') {
+    if (output.source_ids.length === 0) {
+      errors.push('Final output must include at least one source_id.');
+    }
+    if (output.review_reason !== '') {
+      errors.push('Final output must have an empty review_reason.');
+    }
+  }
+
+  if (output.status === 'Needs review') {
+    if (output.source_ids.length !== 0) {
+      errors.push('Needs review output must have an empty source_ids array.');
+    }
+    if (output.review_reason !== 'Missing source_ids; answer cannot be verified.') {
+      errors.push('Needs review output must use the required review_reason message.');
+    }
+  }
+
+  if (!schema.properties.priority.enum.includes(output.priority)) {
+    errors.push('priority must be one of: Low, Medium, High.');
+  }
+
+  if (!Array.isArray(output.required_actions)) {
+    errors.push('required_actions must be an array.');
+  } else {
+    const badAction = output.required_actions.find((item) => typeof item !== 'string');
+    if (badAction !== undefined) {
+      errors.push('required_actions must contain only strings.');
+    }
+  }
+
   return { valid: errors.length === 0, errors };
+}
+
+function getTraceabilityFields(input) {
+  const hasValidSourceIds =
+    Array.isArray(input.source_ids) && input.source_ids.length > 0;
+
+  if (hasValidSourceIds) {
+    return {
+      status: 'Final',
+      source_ids: input.source_ids,
+      review_reason: ''
+    };
+  }
+
+  return {
+    status: 'Needs review',
+    source_ids: [],
+    review_reason: 'Missing source_ids; answer cannot be verified.'
+  };
 }
 
 // Convert raw input into structured output
 function generateStructuredOutput(input) {
-  // Support email-style input by combining payload subject + body text.
   const subject = typeof input?.payload?.subject === 'string' ? input.payload.subject : '';
   const body = typeof input?.payload?.body === 'string' ? input.payload.body : '';
   const emailText = `${subject} ${body}`.trim();
   const normalizedText = emailText.toLowerCase();
 
-  // Rule-based classification for LMS/course/access/deadline/urgent issues.
   const hasLmsKeywords =
     normalizedText.includes('lms') ||
     normalizedText.includes('course') ||
@@ -116,44 +161,43 @@ function generateStructuredOutput(input) {
     normalizedText.includes('urgent') ||
     normalizedText.includes('asap');
 
+  const traceability = getTraceabilityFields(input);
+
   if (hasLmsKeywords && hasUrgencyKeywords) {
     return {
+      request_id: typeof input.request_id === 'string' ? input.request_id : 'unknown-request',
+      ...traceability,
       category: 'LMS Support',
-      priority: 'High',
       summary: emailText || 'LMS access issue requiring urgent support.',
+      confidence: 0.92,
+      priority: 'High',
       required_actions: [
         "Check the learner's LMS access",
         'Confirm course assignment and deadline',
         'Reply with resolution or next steps'
-      ],
-      confidence: 0.92,
-      source_ids: typeof input.request_id === 'string' ? [input.request_id] : []
+      ]
     };
   }
 
   return {
+    request_id: typeof input.request_id === 'string' ? input.request_id : 'unknown-request',
+    ...traceability,
     category: typeof input.category === 'string' ? input.category : 'General',
-    priority: ['Low', 'Medium', 'High'].includes(input.priority) ? input.priority : 'Medium',
-    summary:
-      typeof input.summary === 'string'
-        ? input.summary
-        : emailText || 'No summary provided.',
-    required_actions: Array.isArray(input.required_actions)
-      ? input.required_actions.filter((item) => typeof item === 'string')
-      : [],
+    summary: typeof input.summary === 'string' ? input.summary : emailText || 'No summary provided.',
     confidence:
       typeof input.confidence === 'number' && input.confidence >= 0 && input.confidence <= 1
         ? input.confidence
         : 0.5,
-    source_ids: Array.isArray(input.source_ids)
-      ? input.source_ids.filter((item) => typeof item === 'string')
+    priority: ['Low', 'Medium', 'High'].includes(input.priority) ? input.priority : 'Medium',
+    required_actions: Array.isArray(input.required_actions)
+      ? input.required_actions.filter((item) => typeof item === 'string')
       : []
   };
 }
 
-function main() {
-  const inputPath = path.join(__dirname, 'sample-input.json');
-  const outputPath = path.join(__dirname, 'sample-output.json');
+function runCase(inputFilename, outputFilename) {
+  const inputPath = path.join(__dirname, inputFilename);
+  const outputPath = path.join(__dirname, outputFilename);
 
   console.log('Reading input file:', inputPath);
 
@@ -162,7 +206,7 @@ function main() {
     const fileContents = fs.readFileSync(inputPath, 'utf8');
     rawInput = JSON.parse(fileContents);
   } catch (error) {
-    console.error('❌ Failed to read or parse sample-input.json');
+    console.error(`❌ Failed to read or parse ${inputFilename}`);
     console.error(error.message);
     process.exit(1);
   }
@@ -183,10 +227,27 @@ function main() {
     fs.writeFileSync(outputPath, JSON.stringify(structuredOutput, null, 2));
     console.log('✅ Validation passed. Output written to:', outputPath);
   } catch (error) {
-    console.error('❌ Failed to write sample-output.json');
+    console.error(`❌ Failed to write ${outputFilename}`);
     console.error(error.message);
     process.exit(1);
   }
+}
+
+function main() {
+  const mode = process.argv[2] || 'valid';
+
+  if (mode === 'valid') {
+    runCase('sample-input.json', 'sample-output.json');
+    return;
+  }
+
+  if (mode === 'missing-source-ids') {
+    runCase('sample-input-missing-source-ids.json', 'sample-output-missing-source-ids.json');
+    return;
+  }
+
+  console.error('❌ Unknown mode. Use: valid or missing-source-ids');
+  process.exit(1);
 }
 
 main();
