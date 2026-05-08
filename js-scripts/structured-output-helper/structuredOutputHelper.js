@@ -97,10 +97,47 @@ function validateStructuredOutput(output, schema) {
 
 // Convert raw input into structured output
 function generateStructuredOutput(input) {
+  // Support email-style input by combining payload subject + body text.
+  const subject = typeof input?.payload?.subject === 'string' ? input.payload.subject : '';
+  const body = typeof input?.payload?.body === 'string' ? input.payload.body : '';
+  const emailText = `${subject} ${body}`.trim();
+  const normalizedText = emailText.toLowerCase();
+
+  // Rule-based classification for LMS/course/access/deadline/urgent issues.
+  const hasLmsKeywords =
+    normalizedText.includes('lms') ||
+    normalizedText.includes('course') ||
+    normalizedText.includes('cannot access') ||
+    normalizedText.includes("can't access") ||
+    normalizedText.includes('access');
+  const hasUrgencyKeywords =
+    normalizedText.includes('due today') ||
+    normalizedText.includes('deadline') ||
+    normalizedText.includes('urgent') ||
+    normalizedText.includes('asap');
+
+  if (hasLmsKeywords && hasUrgencyKeywords) {
+    return {
+      category: 'LMS Support',
+      priority: 'High',
+      summary: emailText || 'LMS access issue requiring urgent support.',
+      required_actions: [
+        "Check the learner's LMS access",
+        'Confirm course assignment and deadline',
+        'Reply with resolution or next steps'
+      ],
+      confidence: 0.92,
+      source_ids: typeof input.request_id === 'string' ? [input.request_id] : []
+    };
+  }
+
   return {
     category: typeof input.category === 'string' ? input.category : 'General',
     priority: ['Low', 'Medium', 'High'].includes(input.priority) ? input.priority : 'Medium',
-    summary: typeof input.summary === 'string' ? input.summary : 'No summary provided.',
+    summary:
+      typeof input.summary === 'string'
+        ? input.summary
+        : emailText || 'No summary provided.',
     required_actions: Array.isArray(input.required_actions)
       ? input.required_actions.filter((item) => typeof item === 'string')
       : [],
