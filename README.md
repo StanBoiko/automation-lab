@@ -1,6 +1,6 @@
 # Automation Lab
 
-This repo is my Automation Lab portfolio: automation builds, exports, test assets, and documentation.
+This repo stores small automation scripts, helper files, and documentation for automation learning projects.
 
 ## Tools used
 - Make (scenarios)
