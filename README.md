@@ -1,6 +1,6 @@
 # Automation Lab
 
-This repo stores small automation scripts, helper files, and documentation for automation learning projects.
+This repo is used to practice automation workflows, helper scripts, and safe version control habits.
 
 ## Tools used
 - Make (scenarios)
